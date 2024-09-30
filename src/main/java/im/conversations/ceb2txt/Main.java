@@ -79,8 +79,8 @@ public class Main {
     }
 
     public static void main(final String... args) throws Exception {
-        if (args.length != 1) {
-            System.err.println("Usage java -jar im.conversations.ceb2txt-0.1.jar [filename]");
+        if (args.length < 1 || args.length > 2) {
+            System.err.println("Usage: java -jar im.conversations.ceb2txt-0.1.jar [filename] [password]");
             System.exit(1);
         }
         final String cebFile = args[0];
@@ -97,14 +97,25 @@ public class Main {
             System.exit(1);
             return;
         }
-        final Console console = System.console();
 
-        final String password =
-                new String(
-                        console.readPassword(
-                                "Enter password for "
-                                        + backupFileHeader.getJid().asBareJid()
-                                        + ": "));
+        final String password;
+        if (args.length == 2) {
+            // Use the password provided argument
+            password = args[1];
+        } else {
+            // Read the password from the console
+            final Console console = System.console();
+            if (console == null) {
+                System.err.println("No console available to read password");
+                System.exit(1);
+                return;
+            }
+            password = new String(
+                console.readPassword(
+                    "Enter password for "
+                    + backupFileHeader.getJid().asBareJid()
+                    + ": "));
+        }
 
         final Cipher cipher = Cipher.getInstance(CIPHERMODE, Conscrypt.newProvider());
         byte[] key = getKey(password, backupFileHeader.getSalt());
@@ -270,7 +281,7 @@ public class Main {
     }
 
     private static void importRow(final Connection connection, final JsonReader jsonReader)
-            throws IOException {
+        throws IOException {
         jsonReader.beginObject();
         final String firstParameter = jsonReader.nextName();
         if (!firstParameter.equals("table")) {
