@@ -314,19 +314,28 @@ public class Main {
         }
         jsonReader.endObject();
         jsonReader.endObject();
-        final Query query =
-                connection.createQuery(
-                        String.format(
-                                "INSERT INTO %s (%s) VALUES (%s)",
-                                table,
-                                contentValues.keySet().stream().collect(Collectors.joining(", ")),
-                                contentValues.keySet().stream()
-                                        .map(k -> ":" + k)
-                                        .collect(Collectors.joining(", "))));
+
+        final String sql = String.format(
+            "INSERT INTO %s (%s) VALUES (%s)",
+            table,
+            contentValues.keySet().stream().collect(Collectors.joining(", ")),
+            contentValues.keySet().stream().map(k -> ":" + k).collect(Collectors.joining(", "))
+        );
+
+        final Query query = connection.createQuery(sql);
         for (Map.Entry<String, Object> entry : contentValues.entrySet()) {
             query.addParameter(entry.getKey(), entry.getValue());
         }
-        query.executeUpdate();
+
+        try {
+            query.executeUpdate();
+        } catch (Exception e) {
+            // Print the query that caused the exception, including the table and parameter values.
+            System.err.println("Failed query: " + sql);
+            System.err.println("Parameters: " + contentValues);
+            // Rethrow the exception to allow further handling.
+            throw e;
+        }
     }
 
     public static byte[] getKey(final String password, final byte[] salt) {
